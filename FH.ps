@@ -1,0 +1,43 @@
+# Set the directory you want to hash PDF files from
+$directory = "C:\Users\IsaacZhong\Downloads"
+
+# Set the output file for the hashes
+$outputFile = "C:\Users\IsaacZhong\Downloads\pdf_file_hashes.txt"
+
+# Clear the output file if it exists
+if (Test-Path $outputFile) {
+    Clear-Content $outputFile
+}
+
+# Get all PDF files in the directory recursively
+$files = Get-ChildItem -Path $directory -Filter *.pdf -File -Recurse
+
+# Create a function to hash a file using SHA-256
+function Get-FileHashSHA256 {
+    param (
+        [string]$filePath
+    )
+    # Open the file stream
+    $stream = [System.IO.File]::OpenRead($filePath)
+    # Create a SHA-256 hash object
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    # Compute the hash
+    $hashBytes = $sha256.ComputeHash($stream)
+    # Close the file stream
+    $stream.Close()
+    # Convert the hash bytes to a hexadecimal string
+    return [BitConverter]::ToString($hashBytes) -replace '-', ''
+}
+
+# Loop through each PDF file and hash it
+foreach ($file in $files) {
+    # Get the hash of the current file
+    $hash = Get-FileHashSHA256 -filePath $file.FullName
+    # Format the output as "hash  filepath"
+    $output = "{0}  {1}" -f $hash, $file.FullName
+    # Append the output to the result file
+    Write-Output $output | Out-File -FilePath $outputFile -Append
+}
+
+# Notify the user that hashing is complete
+Write-Host "Hashing complete. Results saved to $outputFile"
